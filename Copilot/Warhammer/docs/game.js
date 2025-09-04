@@ -134,7 +134,10 @@ class Game {
       // Only allow pick if draftIndex is valid and it's the player's turn
       if (!hero.picked && this.draftIndex < this.draftOrder.length && this.draftOrder[this.draftIndex].id === this.playerId && this.draftActive) {
         heroDiv.style.cursor = 'pointer';
-        heroDiv.onclick = () => this.pickDraftHero(idx);
+        heroDiv.onclick = () => {
+          this.log(`[CLICK] Draft hero card: ${hero.name}`);
+          this.pickDraftHero(idx);
+        };
       }
       rouletteDiv.appendChild(heroDiv);
     });
@@ -270,9 +273,8 @@ class Game {
             this.log(`${pUnit.name} (ranged) attacks ${eUnit.name} for ${pUnit.damage || 10} damage! (${eUnit.name} HP: ${eUnit.hp})`);
           });
         } else {
-          // Melee: attack only if in same cell
           livingEnemyUnits.forEach(eUnit => {
-            if (pUnit.x === eUnit.x && pUnit.y === eUnit.y) {
+            if (isAdjacent(pUnit, eUnit)) {
               eUnit.hp -= (pUnit.damage || 10);
               this.log(`${pUnit.name} (melee) attacks ${eUnit.name} for ${pUnit.damage || 10} damage! (${eUnit.name} HP: ${eUnit.hp})`);
             }
@@ -288,7 +290,7 @@ class Game {
           });
         } else {
           livingPlayerUnits.forEach(pUnit => {
-            if (eUnit.x === pUnit.x && eUnit.y === pUnit.y) {
+            if (isAdjacent(eUnit, pUnit)) {
               pUnit.hp -= (eUnit.damage || 10);
               this.log(`${eUnit.name} (melee) attacks ${pUnit.name} for ${eUnit.damage || 10} damage! (${pUnit.name} HP: ${pUnit.hp})`);
             }
@@ -334,6 +336,9 @@ class Game {
     firstRow.style.display = 'flex';
     for (let x = 0; x < 8; x++) {
       const hex = this.createHexCell(units, x, 0, isPlayerBoard);
+      hex.onclick = () => {
+        this.log(`[CLICK] Board cell: (${x}, 0) [${title}]`);
+      };
       firstRow.appendChild(hex);
     }
     grid.appendChild(firstRow);
@@ -343,6 +348,9 @@ class Game {
     secondRow.style.marginLeft = '-40px';
     for (let x = 0; x < 9; x++) {
       const hex = this.createHexCell(units, x, 1, isPlayerBoard);
+      hex.onclick = () => {
+        this.log(`[CLICK] Board cell: (${x}, 1) [${title}]`);
+      };
       secondRow.appendChild(hex);
     }
     grid.appendChild(secondRow);
@@ -351,6 +359,9 @@ class Game {
     thirdRow.style.display = 'flex';
     for (let x = 0; x < 8; x++) {
       const hex = this.createHexCell(units, x, 2, isPlayerBoard);
+      hex.onclick = () => {
+        this.log(`[CLICK] Board cell: (${x}, 2) [${title}]`);
+      };
       thirdRow.appendChild(hex);
     }
     grid.appendChild(thirdRow);
@@ -421,106 +432,87 @@ class Game {
     return hex;
   }
 
-  renderBank(player) {
-    const bankDiv = document.getElementById('bank');
-    if (!bankDiv) return;
-    bankDiv.innerHTML = '';
-        player.bank.forEach((hero, idx) => {
-          const slot = document.createElement('div');
-          slot.className = 'bank-slot';
-          slot.style.width = '60px';
-          slot.style.height = '60px';
-          slot.style.margin = '2px';
-          slot.addEventListener('dragover', e => e.preventDefault());
-          slot.addEventListener('drop', e => {
-            e.preventDefault();
-            const from = e.dataTransfer.getData('from');
-            if (from === 'grid') {
-              const unitIdx = e.dataTransfer.getData('unitIdx');
-              this.moveHeroFromGridToBank(parseInt(unitIdx), idx);
-            }
-            // In renderBank, handle drop from shop (only during preparation phase)
-            slot.addEventListener('drop', e => {
-              e.preventDefault();
-              const from = e.dataTransfer.getData('from');
-              if (from === 'grid') {
-                const unitIdx = e.dataTransfer.getData('unitIdx');
-                this.moveHeroFromGridToBank(parseInt(unitIdx), idx);
-              }
-              if (from === 'shop' && this.prepTimer) {
-                const shopIdx = e.dataTransfer.getData('shopIdx');
-                const hero = this.heroes[shopIdx];
-                const cost = this.getHeroCost(hero);
-                const player = this.players[this.playerId];
-                if (this.buyHeroFromShop(this.playerId, parseInt(shopIdx), cost)) {
-                  if (player.addHeroToBank(hero)) {
-                    const bankIdx = player.bank.findIndex(h => h && h.name === hero.name);
-                    this.log(`Player ${player.id + 1} placed ${hero.name} in bank slot ${bankIdx}`);
-                    this.renderBank(player);
-                    this.renderShopRoulette();
-                  } else {
-                    this.log(`Player ${player.id + 1} could not place ${hero.name} in bank (bank full)`);
-                  }
-                }
-              }
-            });
-          });
-          if (hero) {
-            const heroDiv = document.createElement('div');
-            heroDiv.className = 'hero-card';
-            heroDiv.textContent = hero.name;
-            heroDiv.style.background = hero.color;
-            heroDiv.draggable = true;
-            heroDiv.addEventListener('dragstart', e => {
-              e.dataTransfer.setData('bankIdx', idx);
-              e.dataTransfer.setData('from', 'bank');
-            });
-            slot.appendChild(heroDiv);
-          }
-          bankDiv.appendChild(slot);
-        });
+  // Renders a single shared grid for both players (6 rows: top 3 enemy, bottom 3 player)
+  renderSharedBoardGrid() {
+    const grid = document.createElement('div');
+    grid.className = 'hex-grid';
+    grid.style.display = 'flex';
+    grid.style.flexDirection = 'column';
+    grid.style.margin = '16px';
+    const caption = document.createElement('div');
+    caption.textContent = 'Battlefield';
+    caption.style.fontWeight = 'bold';
+    caption.style.fontSize = '22px';
+    caption.style.color = '#ffd700';
+    caption.style.padding = '8px';
+    caption.style.marginRight  = '60px';
+    grid.appendChild(caption);
+    // 6 rows: 8 columns for even rows, 9 columns for odd rows
+    for (let y = 0; y < 6; y++) {
+      const row = document.createElement('div');
+      row.style.display = 'flex';
+      if (y % 2 === 1) row.style.marginLeft = '-40px';
+      const cols = y % 2 === 1 ? 9 : 8;
+      for (let x = 0; x < cols; x++) {
+        const hex = this.createSharedHexCell(x, y);
+        row.appendChild(hex);
+      }
+      grid.appendChild(row);
+    }
+    return grid;
   }
 
-  moveHeroFromGridToBank(unitIdx, bankIdx) {
-    const player = this.players[this.playerId];
-    const unit = player.units[unitIdx];
-    if (!unit) return;
-    if (player.bank[bankIdx]) return; // Only move if bank slot is empty
-    player.bank[bankIdx] = unit;
-    player.units.splice(unitIdx, 1);
-    this.log(`Player ${player.id + 1} moved ${unit.name} from grid to bank (slot ${bankIdx})`);
-    this.renderBank(player);
-    this.renderPreparationGrid();
+  // Creates a cell for the shared grid, showing both player and enemy units
+  createSharedHexCell(x, y) {
+    const hex = document.createElement('div');
+    hex.className = 'hex-cell';
+    hex.style.width = '100px';
+    hex.style.height = '100px';
+    hex.style.clipPath = 'polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0% 50%)';
+    hex.style.border = '4px solid #ffd700';
+    hex.style.boxSizing = 'border-box';
+    hex.style.display = 'flex';
+    hex.style.alignItems = 'center';
+    hex.style.justifyContent = 'center';
+    hex.style.position = 'relative';
+    hex.style.margin = '2px';
+    hex.dataset.x = x;
+    hex.dataset.y = y;
+    // Find all units at this cell
+    const playerUnits = this.players[this.playerId].units.filter(u => u.x === x && u.y === y);
+    const enemyUnits = this.players[this.currentEnemyId].units.filter(u => u.x === x && u.y === y);
+    const unitsHere = [...playerUnits, ...enemyUnits];
+    if (unitsHere.length > 0) {
+      hex.innerHTML = unitsHere.map(unit => `<span style="color:#fff;text-shadow:0 0 4px ${unit.color},0 0 2px #fff;font-weight:bold;font-size:1.1em;">${unit.name}<br>HP:${unit.hp}</span>`).join('<hr>');
+      hex.style.background = unitsHere[0].color;
+    } else {
+      hex.style.background = '#444';
+    }
+    // Only allow player to drop bank hero to bottom 3 rows
+    if (y >= 3) {
+      hex.addEventListener('dragover', e => e.preventDefault());
+      hex.addEventListener('drop', e => {
+        e.preventDefault();
+        const from = e.dataTransfer.getData('from');
+        if (from === 'bank') {
+          const bankIdx = e.dataTransfer.getData('bankIdx');
+          this.deployHeroFromBankToGrid(parseInt(bankIdx), x, y);
+        }
+        if (from === 'grid') {
+          const unitIdx = e.dataTransfer.getData('unitIdx');
+          this.moveHeroOnGrid(parseInt(unitIdx), x, y);
+        }
+      });
+    }
+    return hex;
   }
 
-  moveHeroOnGrid(unitIdx, x, y) {
-    const player = this.players[this.playerId];
-    const unit = player.units[unitIdx];
-    if (!unit) return;
-    unit.x = x;
-    unit.y = y;
-    this.renderPreparationGrid();
-  }
-
-  deployHeroFromBankToGrid(bankIdx, x, y) {
-    const player = this.players[this.playerId];
-    const hero = player.bank[bankIdx];
-    if (!hero) return;
-    if (!hero.maxHp) hero.maxHp = hero.hp;
-    player.deployHeroToBoard(hero, x, y);
-    player.removeHeroFromBank(bankIdx);
-    this.log(`Player ${player.id + 1} deployed ${hero.name} from bank to grid (${x},${y})`);
-    this.renderBank(player);
-    this.renderPreparationGrid();
-  }
-
+  // Update renderPreparationGrid to use shared grid
   renderPreparationGrid() {
     const boardsDiv = document.getElementById('boards');
     if (!boardsDiv) return;
     boardsDiv.innerHTML = '';
-    // Always render enemy grid with their units
-    boardsDiv.appendChild(this.renderBoardGrid(this.players[this.currentEnemyId].units, 'Enemy Board'));
-    boardsDiv.appendChild(this.renderBoardGrid(this.players[this.playerId].units, 'Your Board', true));
+    boardsDiv.appendChild(this.renderSharedBoardGrid());
     this.renderBank(this.players[this.playerId]);
   }
 
@@ -615,8 +607,8 @@ class Game {
   // Preparation phase for all players after each battle
   startPreparationPhaseForAll() {
     this.log('--- Preparation phase for all players ---');
+    this.prepTimeLeft = 10; // Ensure prepTimeLeft is always initialized
     this.players.forEach((player, idx) => {
-      // Preparation logic for each player
       player.prepTimeLeft = 10;
       if (idx === this.playerId) {
         this.renderPreparationGrid();
@@ -629,6 +621,7 @@ class Game {
           this.prepTimer = null;
         }
         this.prepTimer = setInterval(() => {
+          this.prepTimeLeft = typeof this.prepTimeLeft === 'number' ? this.prepTimeLeft : 10;
           this.prepTimeLeft--;
           this.updatePrepTimerUI();
           if (this.prepTimeLeft <= 0) {
@@ -693,6 +686,22 @@ class Game {
     const shopDiv = document.getElementById('shop');
     if (!shopDiv) return;
     shopDiv.innerHTML = '<h2>Hero Roulette</h2>';
+    // Show player's gold at the top
+    const goldDiv = document.createElement('div');
+    goldDiv.style.fontWeight = 'bold';
+    goldDiv.style.color = '#ffd700';
+    goldDiv.style.marginBottom = '8px';
+    goldDiv.textContent = `Your Gold: ${this.players[this.playerId].gold}`;
+    shopDiv.appendChild(goldDiv);
+
+      // Error message area
+      const errorDiv = document.createElement('div');
+      errorDiv.id = 'shop-error';
+      errorDiv.style.color = '#ff4444';
+      errorDiv.style.fontWeight = 'bold';
+      errorDiv.style.marginBottom = '8px';
+      shopDiv.appendChild(errorDiv);
+
     const rouletteDiv = document.createElement('div');
     rouletteDiv.id = 'roulette';
     // If no shopHeroIndices, reroll
@@ -711,23 +720,34 @@ class Game {
       heroDiv.style.padding = '6px';
       heroDiv.style.borderRadius = '6px';
       heroDiv.style.opacity = 1;
-      heroDiv.style.cursor = 'grab';
+      heroDiv.style.cursor = 'pointer';
       heroDiv.draggable = true;
       heroDiv.addEventListener('dragstart', e => {
         e.dataTransfer.setData('shopIdx', idx);
         e.dataTransfer.setData('from', 'shop');
       });
-      // Optional: click to buy as fallback
-      heroDiv.onclick = () => {
-        this.buyHeroFromShop(this.playerId, idx, cost);
-      };
+      // Click to buy with debug logging
       rouletteDiv.appendChild(heroDiv);
+      heroDiv.onclick = () => {
+        this.log(`[CLICK] Shop hero card: ${hero.name} (${cost} gold)`);
+        this.log(`Attempting to buy ${hero.name} for ${cost} gold. Player gold: ${this.players[this.playerId].gold}`);
+        errorDiv.textContent = '';
+        const result = this.buyHeroFromShop(this.playerId, idx, cost, errorDiv);
+        if (result) {
+          this.log(`Successfully bought ${hero.name}.`);
+        } else {
+          errorDiv.textContent = this.lastShopError || 'Failed to buy hero.';
+          this.log(`Failed to buy ${hero.name}.`);
+        }
+      };
     });
+
     shopDiv.appendChild(rouletteDiv);
     // Reroll button
     const rerollBtn = document.createElement('button');
     rerollBtn.textContent = 'Reroll (2 gold)';
     rerollBtn.onclick = () => {
+      this.log('[CLICK] Reroll button');
       const player = this.players[this.playerId];
       if (player.gold >= 2) {
         player.gold -= 2;
@@ -738,30 +758,58 @@ class Game {
       }
     };
     shopDiv.appendChild(rerollBtn);
-    shopDiv.innerHTML += `<p>Click a hero to buy. Your gold: ${this.players[this.playerId].gold}</p>`;
+    shopDiv.innerHTML += `<p>Click a hero to buy.</p>`;
   }
 
   // Shop roulette: allow buying a hero during preparation if player has enough gold
-  buyHeroFromShop(playerId, heroIdx, cost = 5) {
-    // Only allow buying if in preparation phase
-    if (!this.prepTimer) {
-      this.log('You can only buy heroes during the preparation phase!');
-      return false;
-    }
+  buyHeroFromShop(playerId, heroIdx, cost, errorDiv = null) {
     const player = this.players[playerId];
     const hero = this.heroes[heroIdx];
     // Prevent buying the same hero twice
     const alreadyOwned = player.bank.some(h => h && h.name === hero.name) || player.units.some(u => u.name === hero.name);
-    if (!player || !hero || player.gold < cost || alreadyOwned) {
-      this.log(`Player ${playerId + 1} cannot buy ${hero ? hero.name : 'unknown hero'} (Gold: ${player ? player.gold : 0})`);
+    if (!player || !hero) {
+      this.lastShopError = 'Invalid player or hero.';
+      if (errorDiv) errorDiv.textContent = this.lastShopError;
+      this.log(this.lastShopError);
+      return false;
+    }
+    if (player.gold < cost) {
+      this.lastShopError = 'Not enough gold!';
+      if (errorDiv) errorDiv.textContent = this.lastShopError;
+      this.log(this.lastShopError);
+      return false;
+    }
+    if (alreadyOwned) {
+      this.lastShopError = 'You already own this hero!';
+      if (errorDiv) errorDiv.textContent = this.lastShopError;
+      this.log(this.lastShopError);
       return false;
     }
     player.gold -= cost;
     player.addHeroToBank(hero);
+    this.lastShopError = '';
     this.log(`Player ${playerId + 1} bought ${hero.name} for ${cost} gold. Remaining gold: ${player.gold}`);
+    // Remove hero from shop after purchase
+    const shopIdx = this.shopHeroIndices.indexOf(heroIdx);
+    if (shopIdx !== -1) {
+      this.shopHeroIndices.splice(shopIdx, 1);
+    }
     this.renderBank(player);
     this.renderShopRoulette();
     return true;
+  }
+
+  // Deploys a hero from the bank to the grid
+  deployHeroFromBankToGrid(bankIdx, x, y) {
+    const player = this.players[this.playerId];
+    const hero = player.bank[bankIdx];
+    if (!hero) return;
+    if (!hero.maxHp) hero.maxHp = hero.hp;
+    player.deployHeroToBoard(hero, x, y);
+    player.removeHeroFromBank(bankIdx);
+    this.log(`Player ${player.id + 1} deployed ${hero.name} from bank to grid (${x},${y})`);
+    this.renderBank(player);
+    this.renderPreparationGrid();
   }
 
   restoreHeroStatesAfterBattle() {
@@ -790,6 +838,70 @@ class Game {
     this.renderPreparationGrid();
     this.log('Restored hero states after battle.');
   }
+
+  // Renders the player's bank UI
+  renderBank(player) {
+    const bankDiv = document.getElementById('bank');
+    if (!bankDiv) return;
+    bankDiv.innerHTML = '';
+    player.bank.forEach((hero, idx) => {
+      const slot = document.createElement('div');
+      slot.className = 'bank-slot';
+      slot.style.width = '60px';
+      slot.style.height = '60px';
+      slot.style.margin = '2px';
+      slot.addEventListener('dragover', e => e.preventDefault());
+      slot.addEventListener('drop', e => {
+        e.preventDefault();
+        const from = e.dataTransfer.getData('from');
+        if (from === 'grid') {
+          const unitIdx = e.dataTransfer.getData('unitIdx');
+          this.moveHeroFromGridToBank(parseInt(unitIdx), idx);
+        }
+        if (from === 'shop') {
+          const shopIdx = e.dataTransfer.getData('shopIdx');
+          const hero = this.heroes[shopIdx];
+          const cost = this.getHeroCost(hero);
+          const player = this.players[this.playerId];
+          if (this.buyHeroFromShop(this.playerId, parseInt(shopIdx), cost)) {
+            if (player.addHeroToBank(hero)) {
+              const bankIdx = player.bank.findIndex(h => h && h.name === hero.name);
+              this.log(`Player ${player.id + 1} placed ${hero.name} in bank slot ${bankIdx}`);
+              this.renderBank(player);
+              this.renderShopRoulette();
+            } else {
+              this.log(`Player ${player.id + 1} could not place ${hero.name} in bank (bank full)`);
+            }
+          }
+        }
+      });
+      if (hero) {
+        const heroDiv = document.createElement('div');
+        heroDiv.className = 'hero-card';
+        heroDiv.textContent = hero.name;
+        heroDiv.style.background = hero.color;
+        heroDiv.draggable = true;
+        heroDiv.addEventListener('dragstart', e => {
+          e.dataTransfer.setData('bankIdx', idx);
+          e.dataTransfer.setData('from', 'bank');
+        });
+        heroDiv.onclick = () => {
+          this.log(`[CLICK] Bank hero card: ${hero.name} (slot ${idx})`);
+        };
+        slot.appendChild(heroDiv);
+      } else {
+        slot.onclick = () => {
+          this.log(`[CLICK] Empty bank slot: ${idx}`);
+        };
+      }
+      bankDiv.appendChild(slot);
+    });
+  }
+}
+
+// Helper function for melee adjacency
+function isAdjacent(u1, u2) {
+  return Math.abs(u1.x - u2.x) + Math.abs(u1.y - u2.y) === 1;
 }
 
 const game = new Game(HEROES, 8);

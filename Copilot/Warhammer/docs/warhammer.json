@@ -1,0 +1,176 @@
+{
+  "synergies": {
+    "Space Marines": {
+      "max": 6,
+      "synergy": "Astartes Brotherhood",
+      "effects": {
+        "2": "+armor",
+        "4": "+damage",
+        "6": "Chance to ignore fatal damage once"
+      },
+      "subfactions": {
+        "Black Templars": {
+          "count": 2,
+          "bonus": "Bonus damage if fighting alongside Soldiers (zeal inspiring humans)"
+        },
+        "Deathwatch": {
+          "count": 2,
+          "bonus": "Bonus vs Xenos units (reflects their lore role)"
+        }
+      }
+    },
+    "Adeptus": {
+      "max": 5,
+      "synergy": "Faith & Steel",
+      "effects": {
+        "1": "Allies gain small healing over time",
+        "3": "Allies gain a shield when dropping below 50% HP",
+        "5": "Divine Intervention: once per round, the first ally to die survives at 1 HP and gains bonus damage for 5s"
+      },
+      "subfactions": {
+        "Adeptus Mechanicus": {
+          "count": 2,
+          "bonus": "Buffs Vehicles or Warriors (repair % HP each round)"
+        },
+        "Adeptus Custodes": {
+          "count": 1,
+          "bonus": "Tanky frontline; scales better with Space Marines (Imperial Unity)"
+        },
+        "Adeptus Soritas": {
+          "count": 2,
+          "bonus": "Acts of Faith: when ally dies, one random Adeptus unit gets empowered"
+        }
+      }
+    },
+    "Chaos": {
+      "max": 6,
+      "synergy": "Dark Pacts",
+      "effects": {
+        "2": "Bonus damage when allies die",
+        "4": "Corruption aura (enemy armor down)",
+        "6": "Slain enemies may resurrect as Chaos Spawn (1-use token units)"
+      },
+      "subfactions": {
+        "Chaos Space Marines": { "count": 2 },
+        "Thousand Sons": {
+          "count": 2,
+          "bonus": "Extra strong with Psykers (warp spellcasting bonus)"
+        },
+        "Chaos Daemons": {
+          "count": 2,
+          "bonus": "Stronger with more Chaos units; swarm scaling"
+        }
+      }
+    },
+    "Xenos": {
+      "max": 6,
+      "synergy": "Alien Menace",
+      "effects": {
+        "2": "+attack speed",
+        "4": "Units spawn extra minions (gaunts, scarabs, grots)",
+        "6": "Enemies lose morale (lower crit chance)"
+      },
+      "subfactions": {
+        "Tyranids": {
+          "count": 4,
+          "bonus": "Hive Mind: each Tyranid increases attack for all Tyranids"
+        },
+        "Necrons": {
+          "count": 3,
+          "bonus": "Reanimation Protocols: chance to revive"
+        },
+        "Orks": {
+          "count": 6,
+          "bonus": "WAAAGH!: damage scales with number of Orks"
+        }
+      }
+    },
+    "Rogue Trader": {
+      "count": 1,
+      "trait": "Profit Motive: counts as any faction for synergy"
+    },
+    "Warrior": {
+      "max": 5,
+      "synergy": "Martial Prowess",
+      "effects": "Bonus HP/armor scaling with number of Warriors"
+    },
+    "Soldier": {
+      "max": 5,
+      "synergy": "Rank & File",
+      "effects": "Bonus attack scaling with numbers"
+    },
+    "Vehicles": {
+      "max": 5,
+      "effects": {
+        "1": "+armor for self",
+        "3": "All Vehicles gain bonus damage",
+        "5": "Armored Spearhead: Vehicles project aura reducing ranged damage taken by allies"
+      }
+    },
+    "Psykers": {
+      "max": 5,
+      "effects": {
+        "1": "Reduced mana cost (cast faster)",
+        "3": "+spell power",
+        "5": "Warp Surge: first spell cast by each Psyker stuns enemies nearby"
+      }
+    }
+  },
+  "teamArchetypes": {
+    "Imperial Unity": "Space Marines + Adeptus. Custodes frontline, Marines damage, Sisters miracle revive. Strong late-game tank/sustain comp.",
+    "Chaos Warp Cult": "Chaos Marines + Thousand Sons + Daemons + Psykers. Death-synergies, magic damage scaling, Chaos Spawn tokens.",
+    "Xenos Swarm": "Tyranids + Orks + Necrons. Flood board, attrition, revive, and scaling damage.",
+    "Elite Strike Force": "Deathwatch + Custodes + Vehicles + Psykers. Expensive, but strong counters. Rogue Trader fills gaps.",
+    "Cheap Swarm": "Soldiers + Orks + Sororitas + Vehicles. Lots of bodies, miracle buffs, strong mid-game pressure."
+  },
+  "unitPool": {
+    "Tier 1": [
+      { "name": "Ork Boy", "factions": ["Xenos", "Ork", "Soldier"], "role": "Frontline brawler" },
+      { "name": "Necron Warrior", "factions": ["Xenos", "Necron", "Soldier"], "role": "Weak stats, chance to revive" },
+      { "name": "Tyranid Termagant", "factions": ["Xenos", "Tyranid", "Soldier"], "role": "Ranged swarm attacker" },
+      { "name": "Chaos Cultist", "factions": ["Chaos", "Soldier"], "role": "Dies easily, fuels Chaos death synergies" },
+      { "name": "Battle Sister", "factions": ["Adeptus", "Sororitas", "Soldier"], "role": "Small healing when allies fall" },
+      { "name": "Assault Marine", "factions": ["Space Marine", "Warrior"], "role": "Ranged heavy weapon DPS" }
+    ],
+    "Tier 2": [
+      { "name": "Space Marine Tactical", "factions": ["Space Marine", "Warrior"], "role": "Durable core Astartes" },
+      { "name": "Black Templar Initiate", "factions": ["Space Marine", "Black Templar", "Soldier"], "role": "Bonus damage with Soldiers" },
+      { "name": "Deathwatch Veteran", "factions": ["Space Marine", "Deathwatch", "Warrior"], "role": "Bonus vs Xenos" },
+      { "name": "Adeptus Mechanicus Skitarii Ranger", "factions": ["Adeptus", "Mechanicus", "Soldier"], "role": "Ranged, buffs Vehicles/Warriors" },
+      { "name": "Chaos Space Marine", "factions": ["Chaos", "Warrior"], "role": "Stronger as allies die" },
+      { "name": "Tyranid Hormagaunt", "factions": ["Xenos", "Tyranid", "Soldier"], "role": "Melee swarm, fast" },
+      { "name": "Predator Tank", "factions": ["Adeptus", "Vehicle"], "role": "Armored vehicle" },
+      { "name": "Necron Doomsday Ark", "factions": ["Xenos", "Necron", "Vehicle"], "role": "Heavy vehicle unit" }
+    ],
+    "Tier 3": [
+      { "name": "Sister Superior", "factions": ["Adeptus", "Sororitas", "Warrior"], "role": "Acts of Faith buff when allies die" },
+      { "name": "Tech-Priest Enginseer", "factions": ["Adeptus", "Mechanicus", "Psyker"], "role": "Repairs Vehicles each round" },
+      { "name": "Thousand Sons Sorcerer", "factions": ["Chaos", "Thousand Sons", "Psyker"], "role": "Strong spell damage, scales with Psykers" },
+      { "name": "Ork Nob", "factions": ["Xenos", "Ork", "Warrior"], "role": "Frontline bruiser, boosts Orks" },
+      { "name": "Tyranid Warrior", "factions": ["Xenos", "Tyranid", "Warrior"], "role": "Hive Mind aura: buffs ally attack" },
+      { "name": "Necron Immortal", "factions": ["Xenos", "Necron", "Warrior"], "role": "Ranged tank, chance to revive" },
+      { "name": "Ork Trukk", "factions": ["Xenos", "Ork", "Vehicle"], "role": "Fast transport vehicle" }
+    ],
+    "Tier 4": [
+      { "name": "Space Marine Terminator", "factions": ["Space Marine", "Warrior", "Vehicle"], "role": "Tanky heavy infantry" },
+      { "name": "Custodian Guard", "factions": ["Adeptus", "Custodes", "Warrior"], "role": "Massive durability, synergy with Marines" },
+      { "name": "Chaos Sorcerer", "factions": ["Chaos", "Psyker"], "role": "Warp AoE spells" },
+      { "name": "Daemonette of Slaanesh", "factions": ["Chaos", "Daemon", "Warrior"], "role": "Fast lifesteal DPS" },
+      { "name": "Necron Lychguard", "factions": ["Xenos", "Necron", "Warrior"], "role": "Heavy frontline, revive chance" },
+      { "name": "Ork Warboss", "factions": ["Xenos", "Ork", "Warrior"], "role": "Team-wide WAAAGH! buff" },
+      { "name": "Battlewagon", "factions": ["Xenos", "Ork", "Vehicle"], "role": "Tanky transport, WAAAGH! aura" }
+    ],
+    "Tier 5": [
+      { "name": "Chapter Master", "factions": ["Space Marine", "Warrior"], "role": "Grants teamwide buff to Marines" },
+      { "name": "Living Saint Celestine", "factions": ["Adeptus", "Sororitas", "Psyker"], "role": "Miracle revive once per fight, heals allies" },
+      { "name": "Archmagos Dominus", "factions": ["Adeptus", "Mechanicus", "Psyker"], "role": "Massive repair aura for Vehicles" },
+      { "name": "Daemon Prince", "factions": ["Chaos", "Daemon", "Psyker", "Warrior"], "role": "Frontline + caster hybrid, corrupts enemies" },
+      { "name": "Hive Tyrant", "factions": ["Xenos", "Tyranid", "Psyker", "Warrior"], "role": "Spawns Gaunts, buffs Hive Mind, psychic dmg" },
+      { "name": "Necron Overlord", "factions": ["Xenos", "Necron", "Warrior"], "role": "Empowers Necron revive chance, aura of inevitability" },
+      { "name": "Ghazghkull Thraka", "factions": ["Xenos", "Ork", "Warrior"], "role": "Turns Orks into berserkers" }
+    ],
+    "Tier 6": [
+      { "name": "Rogue Trader", "factions": ["Wildcard"], "role": "Counts as any faction" }
+    ]
+  }
+}
